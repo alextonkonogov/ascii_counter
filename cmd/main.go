@@ -28,5 +28,5 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", asciicounter).Methods("GET")
 	log.Println("Service is working!")
-	log.Fatal(http.ListenAndServe(":9089", r))
+	log.Fatal(http.ListenAndServe(":9090", r))
 }
