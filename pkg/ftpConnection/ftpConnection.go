@@ -1,16 +1,18 @@
 package ftpConnection
 
 import (
-	"github.com/jlaffaye/ftp"
 	"path/filepath"
 	"regexp"
+
+	"github.com/jlaffaye/ftp"
 )
 
+// FtpConnection ...
 type FtpConnection interface {
 	Connect() (err error)
 	Disconnect() (err error)
 	GetRemoteTxtFileNames(dir string) (txtFiles []string, err error)
-	GetConnection() (connection  *ftp.ServerConn)
+	GetConnection() (connection *ftp.ServerConn)
 }
 
 type ftpConnection struct {
@@ -40,10 +42,9 @@ func (f *ftpConnection) Disconnect() (err error) {
 	return
 }
 
-func (f *ftpConnection) GetConnection() (connection  *ftp.ServerConn) {
+func (f *ftpConnection) GetConnection() (connection *ftp.ServerConn) {
 	return f.connection
 }
-
 
 func (f *ftpConnection) GetRemoteTxtFileNames(dir string) (txtFiles []string, err error) {
 	root, err := f.connection.CurrentDir()
@@ -64,11 +65,12 @@ func (f *ftpConnection) GetRemoteTxtFileNames(dir string) (txtFiles []string, er
 	return
 }
 
+// NewFtp ...
 func NewFtp(host, port, user, password string) FtpConnection {
 	return &ftpConnection{
-		host:host,
-		port:port,
-		user:user,
+		host:     host,
+		port:     port,
+		user:     user,
 		password: password,
 	}
 }
