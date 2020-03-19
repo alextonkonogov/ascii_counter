@@ -43,8 +43,8 @@ func (s *service) ASCIISymbolCounter(dir string) {
 		log.Fatal(err)
 	}
 
-	mu := sync.Mutex{}
 	m := make(map[string]int)
+	ch := make(chan string)
 	wg := sync.WaitGroup{}
 
 	conn := s.client.GetConnection()
@@ -67,20 +67,26 @@ func (s *service) ASCIISymbolCounter(dir string) {
 		}
 		file.Close()
 
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, mu *sync.Mutex, m map[string]int) {
+		go func(wg *sync.WaitGroup) {
+			wg.Add(1)
 			for _, char := range out {
 				if !(char > unicode.MaxASCII) {
-					mu.Lock()
-					m[string(char)]++
-					mu.Unlock()
+					ch <- string(char)
 				}
 			}
 			wg.Done()
-		}(&wg, &mu, m)
+		}(&wg)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for ascii := range ch {
+		m[ascii]++
+	}
+
 	s.client.Disconnect()
 
 	type data struct {
