@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -35,12 +34,14 @@ type service struct {
 func (s *service) ASCIISymbolCounter(dir string) {
 	err := s.client.Connect()
 	if err != nil {
-		log.Fatal(err)
+		http.Error(s.response, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	files, err := s.client.GetRemoteTxtFileNames(dir)
 	if err != nil {
-		log.Fatal(err)
+		http.Error(s.response, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	type result struct {
