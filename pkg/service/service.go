@@ -52,7 +52,6 @@ func (s *service) ASCIISymbolCounter(dir string) {
 	asciiChan := make(chan string)
 	filesChan := make(chan result, len(files))
 	wg := sync.WaitGroup{}
-
 	conn := s.client.GetConnection()
 	root, err := conn.CurrentDir()
 	if err != nil {
@@ -70,7 +69,6 @@ func (s *service) ASCIISymbolCounter(dir string) {
 				res.out, res.err = ioutil.ReadAll(file)
 				file.Close()
 			}
-
 			filesChan <- res
 		}
 		close(filesChan)
@@ -82,7 +80,6 @@ func (s *service) ASCIISymbolCounter(dir string) {
 			return
 		}
 		go func(wg *sync.WaitGroup, out []byte) {
-
 			wg.Add(1)
 			for _, char := range res.out {
 				if !(char > unicode.MaxASCII) {
