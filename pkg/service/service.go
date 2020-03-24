@@ -43,8 +43,14 @@ func (s *service) ASCIISymbolCounter(dir string) {
 		log.Fatal(err)
 	}
 
+	type result struct {
+		out []byte
+		err error
+	}
+
 	m := make(map[string]int)
-	ch := make(chan string)
+	asciiChan := make(chan string)
+	filesChan := make(chan result, len(files))
 	wg := sync.WaitGroup{}
 
 	conn := s.client.GetConnection()
@@ -54,36 +60,45 @@ func (s *service) ASCIISymbolCounter(dir string) {
 		return
 	}
 
-	for _, name := range files {
-		file, err := conn.Retr(filepath.Join(root, dir, name))
-		if err != nil {
-			http.Error(s.response, err.Error(), http.StatusInternalServerError)
+	go func() {
+		for _, name := range files {
+			var res result
+			file, err := conn.Retr(filepath.Join(root, dir, name))
+			if err != nil {
+				res.err = err
+			} else {
+				res.out, res.err = ioutil.ReadAll(file)
+				file.Close()
+			}
+
+			filesChan <- res
+		}
+		close(filesChan)
+	}()
+
+	for res := range filesChan {
+		if res.err != nil {
+			http.Error(s.response, res.err.Error(), http.StatusInternalServerError)
 			return
 		}
+		go func(wg *sync.WaitGroup, out []byte) {
 
-		out, err := ioutil.ReadAll(file)
-		if err != nil {
-			return
-		}
-		file.Close()
-
-		go func(wg *sync.WaitGroup) {
 			wg.Add(1)
-			for _, char := range out {
+			for _, char := range res.out {
 				if !(char > unicode.MaxASCII) {
-					ch <- string(char)
+					asciiChan <- string(char)
 				}
 			}
 			wg.Done()
-		}(&wg)
+		}(&wg, res.out)
 	}
 
 	go func() {
 		wg.Wait()
-		close(ch)
+		close(asciiChan)
 	}()
 
-	for ascii := range ch {
+	for ascii := range asciiChan {
 		m[ascii]++
 	}
 
